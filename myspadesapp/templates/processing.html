@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPAdes Processing</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .collapsible {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            padding: 10px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .collapsible.active, .collapsible:hover {
+            background-color: #0056b3;
+        }
+
+        .content {
+            padding: 0 18px;
+            display: none;
+            overflow: hidden;
+            background-color: #f8f9fa;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+
+        .content.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="mt-4">Your SPAdes job is running...</h2>
+        <p>This may take a few minutes. Please do not close this window.</p>
+        
+        <button class="collapsible">Show Log Details</button>
+        <div class="content">
+            <p id="log">Processing output:</p>
+        </div>
+        
+        <button id="resultButton" class="btn btn-primary" disabled onclick="window.location.href='{% url 'result_page' %}'">Processing...</button>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var eventSource = new EventSource("{% url 'sse_view' %}");
+            var log = document.getElementById("log");
+            var resultButton = document.getElementById("resultButton");
+
+            eventSource.onmessage = function(event) {
+                log.innerHTML += event.data + "<br>";
+
+                // Check for the success message indicating that SPAdes has finished successfully
+                if (event.data.includes("SPAdes pipeline finished successfully.")) {
+                    resultButton.disabled = false;
+                    resultButton.textContent = "View Results";
+                    resultButton.classList.remove("btn-primary");
+                    resultButton.classList.add("btn-success");
+                    eventSource.close();
+                } else if (event.data.includes("SPAdes pipeline finished with errors")) {
+                    resultButton.disabled = false;
+                    resultButton.textContent = "View Results (with errors)";
+                    resultButton.classList.remove("btn-primary");
+                    resultButton.classList.add("btn-warning");
+                    eventSource.close();
+                } else if (event.data.includes("An error occurred")) {
+                    log.innerHTML += "An error occurred during processing. Please check the logs.<br>";
+                    console.log("Error occurred in event source.");
+                    eventSource.close();
+                }
+            };
+
+            eventSource.onerror = function() {
+                log.innerHTML += "An error occurred while processing. Please check the server logs.<br>";
+                console.log("Error occurred in event source.");
+                eventSource.close();
+            };
+
+            document.querySelector(".collapsible").addEventListener("click", function() {
+                this.classList.toggle("active");
+                var content = document.querySelector(".content");
+                content.classList.toggle("show");
+            });
+        });
+    </script>
+</body>
+</html>

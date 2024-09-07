@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPAdes Options</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .tooltip-inner {
+            max-width: 350px;
+            width: auto;
+            text-align: left;
+        }
+        .option-group {
+            margin-bottom: 20px;
+        }
+        .option-column {
+            padding: 10px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .form-check-label {
+            font-size: 0.875rem; 
+        }
+        .form-check-input {
+            margin-right: 5px;
+        }
+        .form-group label {
+            font-size: 0.875rem; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-4">SPAdes Assembly Options</h1>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <!-- Input Data -->
+            <div class="option-group">
+                <h3>Input Data</h3>
+                <div class="form-group">
+                    {{ form.input_type.label_tag }}
+                    {{ form.input_type }}
+                </div>
+                <div id="interlaced" class="form-group file-input">
+                    {{ form.interlaced_reads.label_tag }} {{ form.interlaced_reads }}
+                </div>
+                <div id="paired" class="form-group file-input" style="display:none;">
+                    {{ form.forward_reads.label_tag }} {{ form.forward_reads }}<br>
+                    {{ form.reverse_reads.label_tag }} {{ form.reverse_reads }}
+                </div>
+                <div id="unpaired" class="form-group file-input" style="display:none;">
+                    {{ form.unpaired_reads.label_tag }} {{ form.unpaired_reads }}
+                </div>
+                <div id="merged" class="form-group file-input" style="display:none;">
+                    {{ form.merged_reads.label_tag }} {{ form.merged_reads }}
+                </div>
+            </div>
+
+            <!-- Options Section -->
+            <div class="row">
+                <!-- Basic Options -->
+                <div class="col-md-4 option-column">
+                    <h3>Basic Options</h3>
+                    {% for field in form %}
+                        {% if field.name in "isolate sc meta bio corona rna plasmid metaviral metaplasmid rnaviral iontorrent test" %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="{{ field.id_for_label }}" name="{{ field.name }}" {{ field.value|yesno:"checked," }}>
+                                <label class="form-check-label" for="{{ field.id_for_label }}" data-toggle="tooltip" data-placement="right" title="{{ field.help_text }}">
+                                    {{ field.label }}
+                                </label>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <!-- Pipeline Options -->
+                <div class="col-md-4 option-column">
+                    <h3>Pipeline Options</h3>
+                    {% for field in form %}
+                        {% if field.name in "only_error_correction only_assembler careful checkpoints continue_run restart_from disable_gzip_output disable_rr" %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="{{ field.id_for_label }}" name="{{ field.name }}" {{ field.value|yesno:"checked," }}>
+                                <label class="form-check-label" for="{{ field.id_for_label }}" data-toggle="tooltip" data-placement="right" title="{{ field.help_text }}">
+                                    {{ field.label }}
+                                </label>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <!-- Advanced Options -->
+                <div class="col-md-4 option-column">
+                    <h3>Advanced Options</h3>
+                    {% for field in form %}
+                        {% if field.name in "threads kmer_sizes cov_cutoff phred_offset" %}
+                            <div class="form-group">
+                                <label for="{{ field.id_for_label }}" data-toggle="tooltip" data-placement="right" title="{{ field.help_text }}">
+                                    {{ field.label }}
+                                </label>
+                                {{ field }}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="form-group mt-4">
+                <button type="submit" class="btn btn-primary">Run SPAdes</button>
+                <button type="button" class="btn btn-info ml-3" data-toggle="modal" data-target="#helpModal">Help</button>
+            </div>          
+        </form>
+    </div>
+
+    <!-- Help -->
+    <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="helpModalLabel">SPAdes Options Help</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <h5>Basic Options</h5>
+                    <ul>
+                        <li><strong>--isolate:</strong> Recommended for high-coverage isolate and multi-cell data.</li>
+                        <li><strong>--sc:</strong> Required for MDA (single-cell) data.</li>
+                        <li><strong>--meta:</strong> Required for metagenomic data.</li>
+                        <li><strong>--bio:</strong> Required for biosyntheticSPAdes mode.</li>
+                        <li><strong>--corona:</strong> Required for coronaSPAdes mode.</li>
+                        <li><strong>--rna:</strong> Required for RNA-Seq data.</li>
+                        <li><strong>--plasmid:</strong> Runs plasmidSPAdes pipeline for plasmid detection.</li>
+                        <li><strong>--metaviral:</strong> Runs metaviralSPAdes pipeline for virus detection.</li>
+                        <li><strong>--metaplasmid:</strong> Runs metaplasmidSPAdes pipeline for plasmid detection in metagenomic datasets.</li>
+                        <li><strong>--rnaviral:</strong> Enables virus assembly module from RNA-Seq data.</li>
+                        <li><strong>--iontorrent:</strong> Required for IonTorrent data.</li>
+                    </ul>
+
+                    <h5>Pipeline Options</h5>
+                    <ul>
+                        <li><strong>--only-error-correction:</strong> Runs only read error correction without assembling.</li>
+                        <li><strong>--only-assembler:</strong> Runs only assembling without read error correction.</li>
+                        <li><strong>--careful:</strong> Tries to reduce mismatches and short indels.</li>
+                        <li><strong>--checkpoints:</strong> Save intermediate check-points ('last', 'all').</li>
+                        <li><strong>--continue:</strong> Continue run from the last available check-point.</li>
+                        <li><strong>--restart-from:</strong> Restart run from a specified check-point.</li>
+                        <li><strong>--disable-gzip-output:</strong> Forces error correction not to compress the corrected reads.</li>
+                        <li><strong>--disable-rr:</strong> Disables the repeat resolution stage of assembling.</li>
+                    </ul>
+
+                    <h5>Advanced Options</h5>
+                    <ul>
+                        <li><strong>-t, --threads:</strong> Number of threads. Default: 16.</li>
+                        <li><strong>-k, --k-mer sizes:</strong> List of k-mer sizes (must be odd and less than 128). Default: 'auto'.</li>
+                        <li><strong>--cov-cutoff:</strong> Coverage cutoff value. Default: 'off'.</li>
+                        <li><strong>--phred-offset:</strong> PHRED quality offset in the input reads. Choices: 33 or 64.</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.4.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+
+            // file inputs based on selected input type
+            $('select[name="input_type"]').change(function () {
+                var inputType = $(this).val();
+                $('.file-input').hide(); 
+                if (inputType === 'interlaced') {
+                    $('#interlaced').show();
+                } else if (inputType === 'paired') {
+                    $('#paired').show();
+                } else if (inputType === 'unpaired') {
+                    $('#unpaired').show();
+                } else if (inputType === 'merged') {
+                    $('#merged').show();
+                }
+            }).change(); 
+        });
+    </script>
+</body>
+</html>
